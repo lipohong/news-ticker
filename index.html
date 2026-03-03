@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TV News Ticker Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rss-parser/3.13.0/rss-parser.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@400;500&display=swap");
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .ticker-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+      }
+
+      .breaking-news-badge {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 180px;
+        background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: #1f2937;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        z-index: 10;
+        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .ticker-content {
+        position: absolute;
+        left: 190px;
+        right: 20px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .ticker-scroll {
+        display: inline-flex;
+        white-space: nowrap;
+        font-family: "Roboto Mono", monospace;
+        font-size: 18px;
+        color: #ffffff;
+        font-weight: 500;
+        /* Animation will be set via JavaScript */
+      }
+
+      .news-item {
+        display: inline-block;
+        padding: 0 40px;
+        position: relative;
+      }
+
+      .news-item::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 6px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+      }
+
+      .timestamp {
+        color: #fbbf24;
+        font-weight: 600;
+      }
+
+      @keyframes scroll {
+        0% {
+          transform: translateX(100%);
+        }
+        100% {
+          transform: translateX(-100%);
+        }
+      }
+
+      .paused {
+        animation-play-state: paused !important;
+      }
+
+      .control-panel {
+        background: rgba(30, 41, 59, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 600px;
+        margin: 40px auto;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      }
+
+      .control-group {
+        margin-bottom: 20px;
+      }
+
+      .control-label {
+        display: block;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+
+      select {
+        width: 100%;
+        padding: 12px 16px;
+        background: #334155;
+        border: 1px solid #475569;
+        border-radius: 8px;
+        color: #f1f5f9;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      select:hover {
+        border-color: #60a5fa;
+      }
+
+      select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      }
+
+      .speed-slider {
+        width: 100%;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: #334155;
+        border-radius: 3px;
+        outline: none;
+      }
+
+      .speed-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s;
+      }
+
+      .speed-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+      }
+
+      .speed-value {
+        text-align: center;
+        color: #60a5fa;
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      .mode-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .mode-btn {
+        flex: 1;
+        padding: 12px 20px;
+        background: #334155;
+        border: 1px solid #475569;
+        border-radius: 8px;
+        color: #94a3b8;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .mode-btn:hover {
+        background: #475569;
+        color: #f1f5f9;
+      }
+
+      .mode-btn.active {
+        background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+        border-color: #3b82f6;
+        color: #ffffff;
+      }
+
+      .mode-btn.playing {
+        background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+        border-color: #16a34a;
+        color: #ffffff;
+      }
+
+      .title-section {
+        text-align: center;
+        padding: 60px 20px 40px;
+      }
+
+      .title-section h1 {
+        font-size: 48px;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin-bottom: 12px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .title-section p {
+        color: #94a3b8;
+        font-size: 18px;
+      }
+
+      .info-box {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 24px;
+      }
+
+      .info-box h3 {
+        color: #fbbf24;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+      }
+
+      .info-box ul {
+        list-style: none;
+        color: #cbd5e1;
+        font-size: 14px;
+        line-height: 1.8;
+      }
+
+      .info-box li::before {
+        content: "→";
+        color: #60a5fa;
+        margin-right: 8px;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #ffffff;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .news-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        margin-right: 8px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="title-section">
+      <h1>📺 News Ticker Simulator</h1>
+      <p>Professional TV News Ticker with RSS Feed Support</p>
+    </div>
+
+    <div class="control-panel">
+      <div class="control-group">
+        <label class="control-label">
+          <span class="news-indicator"></span>
+          Select News Source
+        </label>
+        <select id="sourceSelect">
+          <option value="">-- Choose a news source --</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Scroll Speed</label>
+        <input
+          type="range"
+          id="speedSlider"
+          class="speed-slider"
+          min="10"
+          max="100"
+          value="50"
+        />
+        <div class="speed-value">
+          <span id="speedValue">50</span> -
+          <span id="speedLabel">Normal</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Play Mode</label>
+        <div class="mode-buttons">
+          <button class="mode-btn active" data-mode="list">📋 List</button>
+          <button class="mode-btn" data-mode="random">🎲 Random</button>
+          <button class="mode-btn" data-mode="stop">⏸️ Stop</button>
+        </div>
+      </div>
+
+      <div class="control-group" style="margin-top: 15px;">
+        <label class="control-label">
+          <input type="checkbox" id="autoRotate" style="margin-right: 8px;">
+          Auto-rotate sources when finished
+        </label>
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 5px;">
+          Automatically switch to next source after current feed completes
+        </p>
+      </div>
+
+      <div class="info-box">
+        <h3>How to Use</h3>
+        <ul>
+          <li>Select a news source from the dropdown</li>
+          <li>Adjust scroll speed with the slider</li>
+          <li>Choose play mode: List (sequential), Random, or Stop</li>
+          <li>The news ticker appears at the bottom of the screen</li>
+        </ul>
+      </div>
+
+      <div
+        class="info-box"
+        style="margin-top: 20px; border-left: 4px solid #ef4444"
+      >
+        <h3 style="color: #ef4444">⚠️ CORS Troubleshooting</h3>
+        <p style="color: #cbd5e1; font-size: 14px; margin-bottom: 12px">
+          If you see "CORS Error" messages, RSS feeds are blocked by browser
+          security. Try these solutions:
+        </p>
+        <ul>
+          <li>
+            <strong>Option 1:</strong> Use a CORS browser extension (Chrome:
+            "CORS Unblock" or "Allow CORS")
+          </li>
+          <li>
+            <strong>Option 2:</strong> Disable CORS temporarily:
+            <code
+              >chrome.exe --disable-web-security --user-data-dir="C:/temp"</code
+            >
+          </li>
+          <li>
+            <strong>Option 3:</strong> Set up a local proxy server (see README)
+          </li>
+          <li>
+            <strong>Option 4:</strong> Use RSS feeds that support CORS (BBC, The
+            Guardian work better)
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ticker-container">
+      <div class="breaking-news-badge">BREAKING NEWS</div>
+      <div class="ticker-content">
+        <div class="ticker-scroll" id="tickerScroll">
+          <span class="news-item"
+            >Welcome to News Ticker Simulator - Select a source to start</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <script src="/script/rss-parser.min.js"></script>
+
+    <script>
+      const rssSources = [
+        // Hong Kong sources (may need CORS bypass)
+        {
+          name: "香港政府新聞公報",
+          url: "https://www.news.gov.hk/tc/common/html/ticker.rss.xml",
+          category: "香港",
+        },
+        {
+          name: "香港天文台天氣",
+          url: "https://rss.weather.gov.hk/rss/LocalWeatherForecast_uc.xml",
+          category: "香港",
+        },
+        {
+          name: "香港電台國際新聞",
+          url: "https://rthk9.rthk.hk/rthk/news/rss/c_expressnews_cinternational.xml",
+          category: "香港",
+        },
+      ];
+
+      // State management
+      let currentNews = [];
+      let currentMode = "list";
+      let currentIndex = 0;
+      let animationSpeed = 50;
+      let isPaused = false;
+      let autoRotate = false;
+      let parser = new RSSParser();
+
+      // DOM Elements
+      const sourceSelect = document.getElementById("sourceSelect");
+      const speedSlider = document.getElementById("speedSlider");
+      const speedValue = document.getElementById("speedValue");
+      const speedLabel = document.getElementById("speedLabel");
+      const tickerScroll = document.getElementById("tickerScroll");
+      const modeButtons = document.querySelectorAll(".mode-btn");
+
+      // Populate source dropdown
+      function populateSources() {
+        console.log("Populating dropdown with", rssSources.length, "sources");
+
+        // Clear existing options except the first one
+        while (sourceSelect.options.length > 1) {
+          sourceSelect.remove(1);
+        }
+
+        rssSources.forEach((source, index) => {
+          const option = document.createElement("option");
+          option.value = index;
+          option.textContent = `${source.name} (${source.category})`;
+          sourceSelect.appendChild(option);
+          console.log(`Added: ${source.name}`);
+        });
+
+        console.log("Dropdown now has", sourceSelect.options.length, "options");
+      }
+
+      // Escape HTML special characters
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Format time
+      function formatTime(date) {
+        const d = new Date(date);
+        const hours = d.getHours().toString().padStart(2, "0");
+        const minutes = d.getMinutes().toString().padStart(2, "0");
+        return `[${hours}:${minutes}]`;
+      }
+
+      // Create news HTML
+      function createNewsHTML(items) {
+        return items
+          .map((item) => {
+            const time = formatTime(item.pubDate || new Date());
+            const title = item.title || "No title available";
+            // Escape HTML to prevent XSS and handle special characters properly
+            const safeTitle = escapeHtml(title);
+            return `<span class="news-item"><span class="timestamp">${time}</span> ${safeTitle}</span>`;
+          })
+          .join("");
+      }
+
+      // CORS Proxy alternatives (in order of preference)
+      const CORS_PROXIES = [
+        (url) => `https://api.codetabs.com/v1/proxy?quest=${url}`,
+        (url) => `https://thingproxy.freeboard.io/fetch/${url}`,
+      ];
+
+      // Detect encoding from XML declaration or content-type
+      function detectEncoding(text, contentType) {
+        // Check XML declaration first
+        const xmlDeclMatch = text.match(
+          /<\?xml[^>]*encoding=["']([^"']+)["'][^>]*\?>/i,
+        );
+        if (xmlDeclMatch) {
+          return xmlDeclMatch[1].toLowerCase();
+        }
+
+        // Check content-type header
+        const charsetMatch = contentType.match(/charset=([^;]+)/i);
+        if (charsetMatch) {
+          return charsetMatch[1].trim().toLowerCase();
+        }
+
+        return "utf-8";
+      }
+
+      // Parse RSS with proper UTF-8 encoding support
+      async function parseRSS(xmlText) {
+        try {
+          const feed = await parser.parseString(xmlText);
+          return feed;
+        } catch (error) {
+          console.error("Parse error:", error);
+          return null;
+        }
+      }
+
+      // Fetch RSS feed with multiple proxy fallbacks
+      async function fetchRSS(url) {
+        // Try each proxy
+        for (let i = 0; i < CORS_PROXIES.length; i++) {
+          const proxyUrl = CORS_PROXIES[i](url);
+          console.log(`Trying proxy ${i + 1}/${CORS_PROXIES.length}...`);
+
+          try {
+            const response = await fetch(proxyUrl, {
+              method: "GET",
+              headers: {
+                Accept:
+                  "application/rss+xml, application/xml, text/xml, text/html",
+              },
+            });
+
+            if (response.ok) {
+              // Get the response as array buffer to preserve encoding
+              const buffer = await response.arrayBuffer();
+
+              // Try to detect encoding from content-type or XML declaration
+              const contentType = response.headers.get("content-type") || "";
+
+              // First try with UTF-8 (most common)
+              let text = new TextDecoder("utf-8").decode(buffer);
+
+              // Detect actual encoding from XML declaration
+              const detectedEncoding = detectEncoding(text, contentType);
+              console.log("Detected encoding:", detectedEncoding);
+
+              // If encoding is different from UTF-8, re-decode
+              if (detectedEncoding !== "utf-8" && detectedEncoding !== "utf8") {
+                try {
+                  text = new TextDecoder(detectedEncoding).decode(buffer);
+                  console.log("Re-decoded with:", detectedEncoding);
+                } catch (e) {
+                  console.log(
+                    "Failed to decode with",
+                    detectedEncoding,
+                    ", using UTF-8",
+                  );
+                }
+              }
+
+              // Check if response is valid RSS
+              if (text && text.trim().length > 0) {
+                const feed = await parseRSS(text);
+
+                if (feed && feed.items && feed.items.length > 0) {
+                  console.log(
+                    `Success! Found ${feed.items.length} items using proxy ${i + 1}`,
+                  );
+                  return feed.items;
+                }
+              }
+            }
+          } catch (error) {
+            console.log(`Proxy ${i + 1} failed:`, error.message);
+            continue; // Try next proxy
+          }
+        }
+
+        // If all proxies fail, return error message
+        console.error("All CORS proxies failed. Using fallback data.");
+        return [
+          {
+            title:
+              "CORS Error: Unable to fetch news. Try using a browser extension to bypass CORS, or run locally with --disable-web-security flag",
+            pubDate: new Date(),
+          },
+          {
+            title:
+              "Alternative: Add a local CORS proxy or use a server-side solution",
+            pubDate: new Date(),
+          },
+          {
+            title:
+              "You can also try accessing the RSS feed directly in your browser",
+            pubDate: new Date(),
+          },
+        ];
+      }
+
+      // Update ticker content
+      async function updateTicker(sourceIndex) {
+        if (sourceIndex === "") return;
+
+        console.log(`Loading source ${sourceIndex}: ${rssSources[sourceIndex].name}`);
+        
+        const source = rssSources[sourceIndex];
+        tickerScroll.innerHTML =
+          '<span class="news-item"><span class="loading"></span> Loading news...</span>';
+
+        try {
+          const items = await fetchRSS(source.url);
+          console.log(`Loaded ${items.length} items from ${source.name}`);
+
+          currentNews = items.slice(0, 20); // Limit to 20 items
+
+          if (currentNews.length > 0) {
+            console.log("Updating display with", currentNews.length, "items");
+            updateTickerDisplay();
+          } else {
+            console.warn("No news items found");
+            tickerScroll.innerHTML = '<span class="news-item">No news items available</span>';
+          }
+        } catch (error) {
+          console.error("Error loading ticker:", error);
+          tickerScroll.innerHTML = '<span class="news-item">Error loading news</span>';
+        }
+      }
+
+      // Update ticker display based on mode
+      function updateTickerDisplay() {
+        if (currentNews.length === 0) {
+          console.warn("updateTickerDisplay called but currentNews is empty");
+          return;
+        }
+
+        let displayItems = [];
+
+        switch (currentMode) {
+          case "list":
+            displayItems = currentNews;
+            break;
+          case "random":
+            displayItems = [...currentNews].sort(() => Math.random() - 0.5);
+            break;
+          case "stop":
+            if (currentIndex < currentNews.length) {
+              displayItems = [currentNews[currentIndex]];
+            } else {
+              currentIndex = 0;
+              displayItems = [currentNews[0]];
+            }
+            break;
+        }
+
+        console.log(`Updating display with ${displayItems.length} items in ${currentMode} mode`);
+
+        // Create HTML content
+        const htmlContent = createNewsHTML(displayItems);
+        
+        // Reset animation to restart from beginning
+        tickerScroll.innerHTML = htmlContent;
+        
+        // Force animation restart with reflow
+        tickerScroll.style.animation = 'none';
+        void tickerScroll.offsetWidth; // Trigger reflow
+        
+        updateAnimation();
+        
+        // Re-enable animation after a brief delay to ensure it starts
+        setTimeout(() => {
+          if (!isPaused && currentMode !== "stop") {
+            tickerScroll.classList.remove("paused");
+            console.log("Animation started successfully");
+          }
+        }, 100);
+      }
+
+      // Update animation
+      function updateAnimation() {
+        // Calculate duration based on content length and speed
+        const contentWidth = tickerScroll.scrollWidth;
+        const viewportWidth = window.innerWidth;
+        const totalDistance = contentWidth + viewportWidth;
+
+        // Speed: 10 (slow) to 100 (fast)
+        // Duration: Higher speed = Lower duration
+        const baseDuration = 20; // seconds at speed 50
+        const speedFactor = 50 / animationSpeed;
+        const duration =
+          baseDuration * speedFactor * (totalDistance / viewportWidth);
+
+        console.log(`Setting animation: duration=${duration.toFixed(1)}s, speed=${animationSpeed}, contentWidth=${contentWidth}`);
+
+        // Reset and set animation
+        tickerScroll.style.animation = `scroll ${duration}s linear infinite`;
+
+        // Handle pause state
+        const shouldPause = isPaused || currentMode === "stop";
+        if (shouldPause) {
+          tickerScroll.classList.add("paused");
+          console.log("Animation paused");
+        } else {
+          tickerScroll.classList.remove("paused");
+          console.log("Animation running");
+        }
+      }
+
+      // Get speed label
+      function getSpeedLabel(value) {
+        if (value <= 20) return "Very Slow";
+        if (value <= 40) return "Slow";
+        if (value <= 60) return "Normal";
+        if (value <= 80) return "Fast";
+        return "Very Fast";
+      }
+
+      // Event Listeners
+      sourceSelect.addEventListener("change", (e) => {
+        updateTicker(e.target.value);
+      });
+
+      speedSlider.addEventListener("input", (e) => {
+        animationSpeed = parseInt(e.target.value);
+        speedValue.textContent = animationSpeed;
+        speedLabel.textContent = getSpeedLabel(animationSpeed);
+        updateAnimation();
+      });
+
+      // Auto-rotate checkbox
+      const autoRotateCheckbox = document.getElementById("autoRotate");
+      autoRotateCheckbox.addEventListener("change", (e) => {
+        autoRotate = e.target.checked;
+        console.log("Auto-rotate:", autoRotate);
+      });
+
+      modeButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          modeButtons.forEach((b) => b.classList.remove("active", "playing"));
+          btn.classList.add("active");
+
+          currentMode = btn.dataset.mode;
+
+          if (currentMode !== "stop") {
+            btn.classList.add("playing");
+          }
+
+          isPaused = currentMode === "stop";
+
+          if (currentNews.length > 0) {
+            updateTickerDisplay();
+          }
+        });
+      });
+
+      // Handle animation end - switch to next source if auto-rotate is enabled
+      tickerScroll.addEventListener("animationiteration", () => {
+        console.log("Animation iteration completed");
+        
+        if (currentMode === "random" && currentNews.length > 0) {
+          // Shuffle again on each loop for random mode
+          setTimeout(() => {
+            updateTickerDisplay();
+          }, 100);
+        }
+        
+        // Auto-rotate to next source if enabled
+        if (autoRotate && !isPaused) {
+          const currentSourceIndex = parseInt(sourceSelect.value);
+          const nextSourceIndex = (currentSourceIndex + 1) % rssSources.length;
+          
+          console.log(`Auto-rotating from source ${currentSourceIndex} to ${nextSourceIndex}`);
+          
+          setTimeout(() => {
+            sourceSelect.value = nextSourceIndex;
+            updateTicker(nextSourceIndex);
+          }, 1000); // 1 second delay before switching
+        }
+      });
+
+      // Initialize with DOM ready check
+      function init() {
+        console.log("Initializing News Ticker...");
+        console.log("RSS Sources:", rssSources.length);
+
+        try {
+          populateSources();
+          console.log("Sources populated successfully");
+
+          // Check if sources were added
+          if (sourceSelect.options.length <= 1) {
+            console.error("No sources added to dropdown");
+            tickerScroll.innerHTML =
+              '<span class="news-item">Error: Failed to populate sources</span>';
+            return;
+          }
+
+          // Start with default source
+          if (rssSources.length > 0) {
+            sourceSelect.value = "0";
+            updateTicker("0");
+          }
+        } catch (error) {
+          console.error("Initialization error:", error);
+          tickerScroll.innerHTML =
+            '<span class="news-item">Error: ' + error.message + "</span>";
+        }
+      }
+
+      // Ensure DOM is ready before initializing
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    </script>
+  </body>
+</html>
