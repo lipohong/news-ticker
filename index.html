@@ -755,8 +755,9 @@
 
           this.currentPosition -= this.scrollSpeed / 60;
 
-          const contentWidth = this.tickerContent.scrollWidth / 2;
+          const contentWidth = this.tickerContent.scrollWidth;
           if (Math.abs(this.currentPosition) >= contentWidth) {
+            // All news have scrolled through, load next set based on play mode
             this.currentPosition = 0;
             this.tickerContent.innerHTML = this.createNewsHTML();
           }
@@ -769,31 +770,28 @@
           if (this.newsItems.length === 0) return "";
 
           const items = [];
-          const displayCount = Math.min(this.newsItems.length * 3, 90);
 
-          for (let i = 0; i < displayCount; i++) {
-            const news = this.newsItems[this.getNextNewsIndex()];
+          for (let i = 0; i < this.newsItems.length; i++) {
+            const news = this.newsItems[i];
             items.push(`
                         <span class="news-item">
                             <span class="news-time">${news.time}</span>
                             ${this.escapeHtml(news.title)}
                         </span>
-                        <span class="news-separator">●</span>
                     `);
           }
 
           return items.join("");
         }
 
-        getNextNewsIndex() {
+        getNextRSSSourceIndex() {
           switch (this.playMode) {
             case "random":
-              return Math.floor(Math.random() * this.newsItems.length);
+              return Math.floor(Math.random() * rssSources.length);
             case "sequential":
             default:
               const index = this.currentIndex;
-              this.currentIndex =
-                (this.currentIndex + 1) % this.newsItems.length;
+              this.currentIndex = (this.currentIndex + 1) % rssSources.length;
               return index;
           }
         }
