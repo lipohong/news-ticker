@@ -508,7 +508,8 @@
         constructor() {
           this.parser = new RSSParser();
           this.newsItems = [];
-          this.currentIndex = 0;
+          this.currentSourceIndex = 0;
+          this.sourceList = [];
           this.playMode = "sequential";
           this.scrollSpeed = 100;
           this.isPlaying = false;
@@ -562,6 +563,7 @@
             grouped[source.category].push(source);
           });
 
+          let optionIndex = 0;
           Object.keys(grouped)
             .sort()
             .forEach((category) => {
@@ -573,10 +575,13 @@
               grouped[category].forEach((source) => {
                 const option = document.createElement("option");
                 option.value = source.url;
+                option.dataset.index = optionIndex;
                 option.textContent = source.name;
                 option.style.background = "#1a1a2e";
                 option.style.color = "#fff";
                 optgroup.appendChild(option);
+                this.sourceList.push(source.url);
+                optionIndex++;
               });
 
               this.sourceSelect.appendChild(optgroup);
@@ -696,6 +701,9 @@
           this.sourceSelect.addEventListener("change", (e) => {
             if (e.target.value) {
               this.loadRSS(e.target.value);
+              this.currentSourceIndex =
+                e.target.selectedOptions[0].dataset.index;
+              console.log("Current source index:", this.currentSourceIndex);
             }
           });
 
@@ -750,7 +758,7 @@
           this.animate();
         }
 
-        animate() {
+        async animate() {
           if (!this.isPlaying) return;
 
           this.currentPosition -= this.scrollSpeed / 60;
@@ -759,6 +767,12 @@
           if (Math.abs(this.currentPosition) >= contentWidth) {
             // All news have scrolled through, load next set based on play mode
             this.currentPosition = 0;
+            console.log("Current source index:", this.currentSourceIndex);
+            this.getNextRSSSourceIndex();
+            await this.loadRSS(this.sourceList[this.currentSourceIndex]);
+            // Update select option selected index
+            document.getElementById("sourceSelect").selectedIndex =
+              this.currentSourceIndex;
             this.tickerContent.innerHTML = this.createNewsHTML();
           }
 
@@ -787,12 +801,20 @@
         getNextRSSSourceIndex() {
           switch (this.playMode) {
             case "random":
-              return Math.floor(Math.random() * rssSources.length);
+              const nextIndex = Math.floor(
+                Math.random() * this.sourceList.length,
+              );
+              this.currentSourceIndex = nextIndex;
+              console.log("Random source index:", this.currentSourceIndex);
             case "sequential":
             default:
-              const index = this.currentIndex;
-              this.currentIndex = (this.currentIndex + 1) % rssSources.length;
-              return index;
+              const index = this.currentSourceIndex;
+              if (index === this.sourceList.length - 1) {
+                this.currentSourceIndex = 0;
+              } else {
+                this.currentSourceIndex++;
+              }
+              console.log("Sequential source index:", this.currentSourceIndex);
           }
         }
 
