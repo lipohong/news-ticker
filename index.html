@@ -772,7 +772,7 @@
             await this.loadRSS(this.sourceList[this.currentSourceIndex]);
             // Update select option selected index
             document.getElementById("sourceSelect").selectedIndex =
-              this.currentSourceIndex;
+              this.currentSourceIndex + 1;
             this.tickerContent.innerHTML = this.createNewsHTML();
           }
 
