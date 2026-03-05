@@ -661,6 +661,7 @@
             this.newsItems = items.map((item) => ({
               title: item.title,
               time: this.formatTime(item.isoDate || item.pubDate),
+              link: item.link || "",
             }));
 
             this.newsCount.textContent = `${this.newsItems.length} news`;
@@ -745,7 +746,7 @@
             // All news have scrolled through, load next set based on play mode
             this.currentPosition = 0;
             console.log("Current source index:", this.currentSourceIndex);
-            this.getNextRSSSourceIndex();
+            this.setNextRSSSourceIndex();
             await this.loadRSS(this.sourceList[this.currentSourceIndex]);
             // Update select option selected index
             document.getElementById("sourceSelect").selectedIndex =
@@ -764,18 +765,27 @@
 
           for (let i = 0; i < this.newsItems.length; i++) {
             const news = this.newsItems[i];
-            items.push(`
-                        <span class="news-item">
+            if (news.link) {
+              items.push(`
+                        <a href="${news.link}" target="_blank" class="news-item">
                             <span class="news-time">${news.time}</span>
                             ${this.escapeHtml(news.title)}
-                        </span>
+                        </a>
                     `);
+            } else {
+              items.push(`
+                        <div class="news-item">
+                            <span class="news-time">${news.time}</span>
+                            ${this.escapeHtml(news.title)}
+                        </div>
+                    `);
+            }
           }
 
           return items.join("");
         }
 
-        getNextRSSSourceIndex() {
+        setNextRSSSourceIndex() {
           switch (this.playMode) {
             case "random":
               const nextIndex = Math.floor(
