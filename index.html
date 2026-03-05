@@ -809,7 +809,9 @@
             case "sequential":
             default:
               const index = this.currentSourceIndex;
-              if (index === this.sourceList.length - 1) {
+              console.log("sourceList.length:", this.sourceList.length);
+              console.log("current Sequential source index:", index);
+              if (index >= this.sourceList.length - 1) {
                 this.currentSourceIndex = 0;
               } else {
                 this.currentSourceIndex++;
