@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TV News Ticker Simulator</title>
+    <title>News Ticker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
@@ -113,6 +113,58 @@
         align-items: center;
         gap: 16px;
         flex-wrap: wrap;
+      }
+
+      .control-group-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .control-group.is-collapsed .control-group-content {
+        display: none;
+      }
+
+      .control-toggle {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #a0a0b0;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        user-select: none;
+      }
+
+      .control-toggle:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(233, 69, 96, 0.5);
+        color: #fff;
+      }
+
+      .control-toggle:focus {
+        outline: none;
+        border-color: #e94560;
+        box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.2);
+      }
+
+      .control-toggle__icon {
+        color: #e94560;
+        font-size: 14px;
+        line-height: 1;
+        width: 14px;
+        text-align: center;
+        transform: translateY(-1px);
       }
 
       .control-label {
@@ -365,10 +417,22 @@
       }
 
       @media (max-width: 768px) {
+        .control-toggle {
+          display: inline-flex;
+          width: 100%;
+          justify-content: flex-start;
+        }
+
         .control-group {
           flex-direction: column;
           align-items: stretch;
-          gap: 16px;
+          gap: 8px;
+        }
+
+        .control-group-content {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 8px;
         }
 
         .custom-select {
@@ -376,7 +440,7 @@
         }
 
         .broadcast-logo {
-          font-size: 36px;
+          font-size: 24px;
         }
 
         .mode-buttons {
@@ -387,69 +451,84 @@
   </head>
   <body>
     <div class="control-panel">
-      <div class="control-group">
-        <div>
-          <div class="control-label" style="margin-bottom: 6px">
-            News Source
-          </div>
-          <select id="sourceSelect" class="custom-select">
-            <option value="">Select a news source...</option>
-          </select>
-        </div>
-
-        <div>
-          <div class="control-label" style="margin-bottom: 6px">Play Mode</div>
-          <div class="mode-buttons">
-            <button
-              class="mode-btn active"
-              data-mode="sequential"
-              id="btnSequential"
-            >
-              Sequential
-            </button>
-            <button class="mode-btn" data-mode="random" id="btnRandom">
-              Random
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <div class="control-label" style="margin-bottom: 6px">
-            Scroll Speed
-          </div>
-          <div class="slider-container">
-            <input
-              type="range"
-              id="speedSlider"
-              class="speed-slider"
-              min="20"
-              max="200"
-              value="100"
-            />
-            <span class="speed-value" id="speedValue">100 px/s</span>
-          </div>
-        </div>
-
-        <div
-          style="
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-          "
+      <div class="control-group" id="controlGroup">
+        <button
+          type="button"
+          class="control-toggle"
+          id="controlGroupToggle"
+          aria-expanded="true"
+          aria-controls="controlGroupContent"
         >
-          <span id="statusBadge" class="status-badge status-loading pulse">
-            <span class="w-2 h-2 rounded-full bg-current"></span>
-            Loading
-          </span>
-          <span id="newsCount" class="news-count">0 news</span>
+          <span class="control-toggle__text">Controls</span>
+          <span class="control-toggle__icon" aria-hidden="true">▼</span>
+        </button>
+
+        <div class="control-group-content" id="controlGroupContent">
+          <div>
+            <div class="control-label" style="margin-bottom: 6px">
+              News Source
+            </div>
+            <select id="sourceSelect" class="custom-select">
+              <option value="">Select a news source...</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="control-label" style="margin-bottom: 6px">
+              Play Mode
+            </div>
+            <div class="mode-buttons">
+              <button
+                class="mode-btn active"
+                data-mode="sequential"
+                id="btnSequential"
+              >
+                Sequential
+              </button>
+              <button class="mode-btn" data-mode="random" id="btnRandom">
+                Random
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div class="control-label" style="margin-bottom: 6px">
+              Scroll Speed
+            </div>
+            <div class="slider-container">
+              <input
+                type="range"
+                id="speedSlider"
+                class="speed-slider"
+                min="20"
+                max="200"
+                value="100"
+              />
+              <span class="speed-value" id="speedValue">100 px/s</span>
+            </div>
+          </div>
+
+          <div
+            style="
+              margin-left: auto;
+              display: flex;
+              align-items: center;
+              gap: 16px;
+            "
+          >
+            <span id="statusBadge" class="status-badge status-loading pulse">
+              <span class="w-2 h-2 rounded-full bg-current"></span>
+              Loading
+            </span>
+            <span id="newsCount" class="news-count">0 news</span>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="background-content">
       <div class="broadcast-logo">
-        NEWS<span style="color: #e94560">BROADCAST</span>
+        NEWS&nbsp;<span style="color: #e94560">BROADCAST</span>
       </div>
       <div class="broadcast-subtitle">Live RSS News Ticker</div>
     </div>
@@ -521,6 +600,14 @@
           this.speedValue = document.getElementById("speedValue");
           this.statusBadge = document.getElementById("statusBadge");
           this.newsCount = document.getElementById("newsCount");
+
+          this.controlGroup = document.getElementById("controlGroup");
+          this.controlGroupContent = document.getElementById(
+            "controlGroupContent",
+          );
+          this.controlGroupToggle =
+            document.getElementById("controlGroupToggle");
+          this.isControlGroupCollapsed = false;
 
           this.init();
         }
@@ -690,6 +777,42 @@
               this.handleModeChange();
             });
           });
+
+          if (this.controlGroupToggle) {
+            this.controlGroupToggle.addEventListener("click", () => {
+              this.setControlGroupCollapsed(!this.isControlGroupCollapsed);
+            });
+          }
+
+          window.addEventListener("resize", () =>
+            this.handleResponsiveControls(),
+          );
+          this.handleResponsiveControls();
+        }
+
+        handleResponsiveControls() {
+          const isMobile = window.matchMedia("(max-width: 768px)").matches;
+          if (!isMobile) {
+            this.setControlGroupCollapsed(false);
+          }
+        }
+
+        setControlGroupCollapsed(collapsed) {
+          if (!this.controlGroup || !this.controlGroupToggle) return;
+
+          this.isControlGroupCollapsed = collapsed;
+          this.controlGroup.classList.toggle("is-collapsed", collapsed);
+          this.controlGroupToggle.setAttribute(
+            "aria-expanded",
+            collapsed ? "false" : "true",
+          );
+
+          const icon = this.controlGroupToggle.querySelector(
+            ".control-toggle__icon",
+          );
+          if (icon) {
+            icon.textContent = collapsed ? "▶" : "▼";
+          }
         }
 
         handleModeChange() {
