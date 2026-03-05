@@ -569,8 +569,6 @@
           // Try each proxy
           for (let i = 0; i < CORS_PROXIES.length; i++) {
             const proxyUrl = CORS_PROXIES[i](url);
-            console.log(`Trying proxy ${i + 1}/${CORS_PROXIES.length}...`);
-
             try {
               const response = await fetch(proxyUrl, {
                 method: "GET",
@@ -592,7 +590,6 @@
 
                 // Detect actual encoding from XML declaration
                 const detectedEncoding = this.detectEncoding(text, contentType);
-                console.log("Detected encoding:", detectedEncoding);
 
                 // If encoding is different from UTF-8, re-decode
                 if (
@@ -601,7 +598,6 @@
                 ) {
                   try {
                     text = new TextDecoder(detectedEncoding).decode(buffer);
-                    console.log("Re-decoded with:", detectedEncoding);
                   } catch (e) {
                     console.log(
                       "Failed to decode with",
@@ -616,9 +612,6 @@
                   const feed = await this.parseRSS(text);
 
                   if (feed && feed.items && feed.items.length > 0) {
-                    console.log(
-                      `Success! Found ${feed.items.length} items using proxy ${i + 1}`,
-                    );
                     return feed.items;
                   }
                 }
@@ -656,8 +649,6 @@
 
           try {
             const items = await this.fetchRSS(url);
-            console.log(`Loaded ${items.length} items from ${url}`);
-
             this.newsItems = items.map((item) => ({
               title: item.title,
               time: this.formatTime(item.isoDate || item.pubDate),
@@ -681,7 +672,6 @@
               this.loadRSS(e.target.value);
               this.currentSourceIndex =
                 e.target.selectedOptions[0].dataset.index;
-              console.log("Current source index:", this.currentSourceIndex);
             }
           });
 
@@ -745,7 +735,6 @@
           if (Math.abs(this.currentPosition) >= contentWidth) {
             // All news have scrolled through, load next set based on play mode
             this.currentPosition = 0;
-            console.log("Current source index:", this.currentSourceIndex);
             this.setNextRSSSourceIndex();
             await this.loadRSS(this.sourceList[this.currentSourceIndex]);
             // Update select option selected index
@@ -792,19 +781,15 @@
                 Math.random() * this.sourceList.length,
               );
               this.currentSourceIndex = nextIndex;
-              console.log("Random source index:", this.currentSourceIndex);
               break;
             case "sequential":
             default:
               const index = this.currentSourceIndex;
-              console.log("sourceList.length:", this.sourceList.length);
-              console.log("current Sequential source index:", index);
               if (index >= this.sourceList.length - 1) {
                 this.currentSourceIndex = 0;
               } else {
                 this.currentSourceIndex++;
               }
-              console.log("Sequential source index:", this.currentSourceIndex);
           }
         }
 
