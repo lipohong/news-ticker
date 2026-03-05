@@ -442,7 +442,7 @@
             <span class="w-2 h-2 rounded-full bg-current"></span>
             Loading
           </span>
-          <span id="newsCount" class="news-count">0 items</span>
+          <span id="newsCount" class="news-count">0 news</span>
         </div>
       </div>
     </div>
@@ -529,29 +529,6 @@
           this.populateSourceSelect();
           this.setupEventListeners();
           this.updateStatus("paused", "Ready");
-        }
-
-        populateSources() {
-          console.log("Populating dropdown with", rssSources.length, "sources");
-
-          // Clear existing options except the first one
-          while (sourceSelect.options.length > 1) {
-            sourceSelect.remove(1);
-          }
-
-          rssSources.forEach((source, index) => {
-            const option = document.createElement("option");
-            option.value = index;
-            option.textContent = `${source.name} (${source.category})`;
-            sourceSelect.appendChild(option);
-            console.log(`Added: ${source.name}`);
-          });
-
-          console.log(
-            "Dropdown now has",
-            sourceSelect.options.length,
-            "options",
-          );
         }
 
         populateSourceSelect() {
@@ -686,7 +663,7 @@
               time: this.formatTime(item.isoDate || item.pubDate),
             }));
 
-            this.newsCount.textContent = `${this.newsItems.length} items`;
+            this.newsCount.textContent = `${this.newsItems.length} news`;
             this.updateStatus("playing", "Playing");
 
             this.startTicker();
@@ -806,6 +783,7 @@
               );
               this.currentSourceIndex = nextIndex;
               console.log("Random source index:", this.currentSourceIndex);
+              break;
             case "sequential":
             default:
               const index = this.currentSourceIndex;
